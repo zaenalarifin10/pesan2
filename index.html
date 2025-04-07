@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat Real-time Firebase</title>
+  <title>Chat Mobile Firebase</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -11,37 +11,51 @@
 <body class="bg-gray-100 text-gray-900">
 
   <!-- Grup Info -->
-  <div class="text-center py-3 border-b bg-white shadow-md sticky top-0 z-10">
-    <h2 id="groupName" class="font-bold text-lg hidden"></h2>
-    <p id="groupToken" class="text-sm text-gray-600 hidden"></p>
+  <div class="text-center py-2 border-b bg-white shadow-md sticky top-0 z-10 text-sm">
+    <h2 id="groupName" class="font-semibold hidden text-base"></h2>
+    <p id="groupToken" class="text-xs text-gray-600 hidden"></p>
   </div>
 
   <!-- Chat Container -->
-  <div id="chatContainer" class="pb-24 px-4 pt-4 overflow-y-auto h-[75vh]">
-    <div id="messages" class="space-y-2"></div>
+  <div id="chatContainer" class="pb-28 px-3 pt-3 overflow-y-auto h-[75vh]">
+    <div id="messages" class="space-y-2 text-sm"></div>
   </div>
 
   <!-- Input Pesan -->
-  <div class="fixed bottom-16 w-full px-4">
+  <div class="fixed bottom-16 w-full px-3">
     <div class="flex gap-2">
-      <input type="text" id="messageInput" placeholder="Tulis pesan..." class="flex-1 p-2 rounded border border-gray-300" />
-      <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded">➤</button>
+      <input type="text" id="messageInput" placeholder="Tulis pesan..." class="flex-1 p-2 rounded border border-gray-300 text-sm" />
+      <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded text-sm">➤</button>
     </div>
   </div>
 
   <!-- Navbar Bawah -->
-  <div class="fixed bottom-0 w-full bg-white shadow-md flex justify-around items-center py-3 border-t text-sm">
-    <button onclick="createGroup()" class="text-blue-600 font-semibold">+ Grup</button>
-    <button onclick="joinGroup()" class="text-green-600 font-semibold">Gabung</button>
-    <button onclick="showMyGroups()" class="text-purple-600 font-semibold">Grup Saya</button>
+  <div class="fixed bottom-0 w-full bg-white shadow-md flex justify-around items-center py-2 border-t text-xs">
+    <button onclick="createGroup()" class="text-blue-600 font-medium">+ Grup</button>
+    <button onclick="joinGroup()" class="text-green-600 font-medium">Gabung</button>
+    <button onclick="showMyGroups()" class="text-purple-600 font-medium">Grup Saya</button>
   </div>
 
   <!-- Modal Grup Saya -->
-  <div id="myGroupsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-20">
-    <div class="bg-white p-4 rounded shadow-lg max-w-sm w-full">
-      <h3 class="text-lg font-bold mb-2">Grup yang Diikuti</h3>
-      <ul id="groupList" class="space-y-2"></ul>
+  <div id="myGroupsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-20 px-4">
+    <div class="bg-white p-4 rounded shadow-lg w-full max-w-xs text-sm">
+      <h3 class="text-base font-semibold mb-2">Grup yang Diikuti</h3>
+      <ul id="groupList" class="space-y-2 max-h-60 overflow-y-auto"></ul>
       <button onclick="closeMyGroups()" class="mt-4 text-red-500">Tutup</button>
+    </div>
+  </div>
+
+  <!-- Modal Username -->
+  <div id="usernameModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-30 px-4">
+    <div class="bg-white p-4 rounded shadow-md w-full max-w-xs text-sm space-y-3">
+      <h2 class="text-base font-semibold text-center">Masukkan Username</h2>
+      <input type="text" id="usernameInput" placeholder="Username kamu" class="w-full p-2 border rounded" />
+      <select id="genderSelect" class="w-full p-2 border rounded">
+        <option value="">Pilih jenis kelamin</option>
+        <option value="cewek">Cewek</option>
+        <option value="cowok">Cowok</option>
+      </select>
+      <button onclick="setUsername()" class="bg-blue-600 w-full py-2 text-white rounded">Lanjut</button>
     </div>
   </div>
 
@@ -65,10 +79,13 @@
     let currentGroupName = '';
     let currentGroupRef;
 
-    function promptUsername() {
-      username = prompt("Masukkan username:");
-      gender = prompt("Kamu cowok atau cewek?");
-      if (!username) promptUsername();
+    function setUsername() {
+      const input = document.getElementById("usernameInput").value.trim();
+      const select = document.getElementById("genderSelect").value;
+      if (!input || !select) return alert("Lengkapi data terlebih dahulu.");
+      username = input;
+      gender = select;
+      document.getElementById("usernameModal").classList.add("hidden");
     }
 
     function generateToken(length = 5) {
@@ -144,7 +161,6 @@
     function sendMessage() {
       const msg = document.getElementById("messageInput").value.trim();
       if (!msg || !groupToken) return;
-
       const time = new Date().toISOString();
       db.ref("groups/" + groupToken + "/chats").push({
         user: username,
@@ -152,7 +168,6 @@
         message: msg,
         time: time
       });
-
       document.getElementById("messageInput").value = '';
     }
 
@@ -163,16 +178,14 @@
       currentGroupRef.on("child_added", snapshot => {
         const data = snapshot.val();
         const div = document.createElement("div");
-        div.className = `p-2 rounded ${
-          data.user === username ? "bg-blue-200 text-right" : "bg-gray-200 text-left"
+        div.className = `p-2 rounded max-w-[80%] ${
+          data.user === username ? "bg-blue-200 ml-auto text-right" : "bg-gray-200 mr-auto text-left"
         }`;
-        div.innerHTML = `<strong>${data.user} (${data.gender})</strong>: ${data.message}`;
+        div.innerHTML = `<strong>${data.user} (${data.gender})</strong>:<br>${data.message}`;
         document.getElementById("messages").appendChild(div);
         div.scrollIntoView({ behavior: "smooth" });
       });
     }
-
-    promptUsername();
   </script>
 </body>
 </html>
