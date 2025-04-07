@@ -7,11 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <style>
-    input:focus {
-      outline: none;
-    }
-  </style>
 </head>
 <body class="bg-gray-100 text-gray-900">
 
@@ -27,23 +22,17 @@
   </div>
 
   <!-- Input Pesan -->
-  <div class="fixed bottom-0 w-full px-3 pb-3 bg-gray-100 z-20">
-    <div class="flex gap-2 items-end">
-      <button onclick="toggleGroupModal()" class="text-blue-600 text-xl font-bold px-2">☰</button>
-      <input type="text" id="messageInput" placeholder="Tulis pesan..." class="flex-1 p-2 rounded border border-gray-300 text-sm bg-white" />
-      <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded text-sm">➤</button>
-    </div>
+  <div class="fixed bottom-0 w-full bg-white border-t p-2 flex items-center gap-2">
+    <button onclick="toggleGroupMenu()" class="bg-gray-200 px-3 py-2 rounded text-sm">☰</button>
+    <input type="text" id="messageInput" placeholder="Tulis pesan..." class="flex-1 p-2 rounded border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+    <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded text-sm">➤</button>
   </div>
 
-  <!-- Modal Grup Action -->
-  <div id="groupActionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-30 px-4">
-    <div class="bg-white p-4 rounded shadow-lg w-full max-w-xs text-sm space-y-3 text-center">
-      <h3 class="text-base font-semibold">Aksi Grup</h3>
-      <button onclick="createGroup()" class="text-blue-600 w-full border py-2 rounded">+ Buat Grup</button>
-      <button onclick="joinGroup()" class="text-green-600 w-full border py-2 rounded">Gabung Grup</button>
-      <button onclick="showMyGroups()" class="text-purple-600 w-full border py-2 rounded">Grup Saya</button>
-      <button onclick="closeGroupModal()" class="text-red-500 w-full border py-2 rounded">Tutup</button>
-    </div>
+  <!-- Pop-up Menu Grup -->
+  <div id="groupMenu" class="fixed bottom-16 left-2 bg-white border rounded shadow-md text-sm z-30 hidden flex-col">
+    <button onclick="createGroup()" class="p-2 border-b text-blue-600 text-left">+ Grup</button>
+    <button onclick="joinGroup()" class="p-2 border-b text-green-600 text-left">Gabung</button>
+    <button onclick="showMyGroups()" class="p-2 text-purple-600 text-left">Grup Saya</button>
   </div>
 
   <!-- Modal Grup Saya -->
@@ -51,12 +40,12 @@
     <div class="bg-white p-4 rounded shadow-lg w-full max-w-xs text-sm">
       <h3 class="text-base font-semibold mb-2">Grup yang Diikuti</h3>
       <ul id="groupList" class="space-y-2 max-h-60 overflow-y-auto"></ul>
-      <button onclick="closeMyGroups()" class="mt-4 text-red-500 w-full">Tutup</button>
+      <button onclick="closeMyGroups()" class="mt-4 text-red-500">Tutup</button>
     </div>
   </div>
 
   <!-- Modal Username -->
-  <div id="usernameModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-40 px-4">
+  <div id="usernameModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-30 px-4">
     <div class="bg-white p-4 rounded shadow-md w-full max-w-xs text-sm space-y-3">
       <h2 class="text-base font-semibold text-center">Masukkan Username</h2>
       <input type="text" id="usernameInput" placeholder="Username kamu" class="w-full p-2 border rounded" />
@@ -70,6 +59,7 @@
   </div>
 
   <script>
+    // Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBfpgasxtvd-ZWZ1YugluxQKTE-ZvC6jfM",
       authDomain: "pesan-ffc61.firebaseapp.com",
@@ -88,22 +78,32 @@
     let currentGroupName = '';
     let currentGroupRef;
 
+    // Auto load username
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedUsername = localStorage.getItem("username");
+      const savedGender = localStorage.getItem("gender");
+      if (savedUsername && savedGender) {
+        username = savedUsername;
+        gender = savedGender;
+        document.getElementById("usernameModal").classList.add("hidden");
+      }
+    });
+
     function setUsername() {
       const input = document.getElementById("usernameInput").value.trim();
       const select = document.getElementById("genderSelect").value;
       if (!input || !select) return alert("Lengkapi data terlebih dahulu.");
       username = input;
       gender = select;
+      localStorage.setItem("username", username);
+      localStorage.setItem("gender", gender);
       document.getElementById("usernameModal").classList.add("hidden");
     }
 
-    function toggleGroupModal() {
-      document.getElementById("groupActionModal").classList.remove("hidden");
-      document.getElementById("groupActionModal").classList.add("flex");
-    }
-
-    function closeGroupModal() {
-      document.getElementById("groupActionModal").classList.add("hidden");
+    function toggleGroupMenu() {
+      const menu = document.getElementById("groupMenu");
+      menu.classList.toggle("hidden");
+      menu.classList.toggle("flex");
     }
 
     function generateToken(length = 5) {
@@ -121,14 +121,12 @@
       const token = generateToken();
       db.ref("groups/" + token).set({ name: name });
       joinGroupByToken(token);
-      closeGroupModal();
     }
 
     function joinGroup() {
       const token = prompt("Masukkan token grup:");
       if (!token) return;
       joinGroupByToken(token.toUpperCase());
-      closeGroupModal();
     }
 
     function joinGroupByToken(token) {
@@ -172,7 +170,6 @@
       });
       modal.classList.remove("hidden");
       modal.classList.add("flex");
-      closeGroupModal();
     }
 
     function closeMyGroups() {
