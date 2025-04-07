@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chat Mobile Firebase</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -37,7 +37,7 @@
 
   <!-- Modal Grup Saya -->
   <div id="myGroupsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-20 px-4">
-    <div class="bg-white p-4 rounded shadow-lg w-full max-w-xs text-sm">
+    <div class="bg-white p-4 rounded shadow-lg w-full max-w-xs text-sm" id="myGroupsContent">
       <h3 class="text-base font-semibold mb-2">Grup yang Diikuti</h3>
       <ul id="groupList" class="space-y-2 max-h-60 overflow-y-auto"></ul>
       <button onclick="closeMyGroups()" class="mt-4 text-red-500">Tutup</button>
@@ -218,6 +218,22 @@
         div.scrollIntoView({ behavior: "smooth" });
       });
     }
+
+    // Close pop-up saat klik luar
+    document.addEventListener("click", function (e) {
+      const menu = document.getElementById("groupMenu");
+      const modal = document.getElementById("myGroupsModal");
+      const modalContent = document.getElementById("myGroupsContent");
+
+      if (!menu.contains(e.target) && !e.target.matches("button[onclick*='toggleGroupMenu']")) {
+        menu.classList.add("hidden");
+        menu.classList.remove("flex");
+      }
+
+      if (!modalContent.contains(e.target) && !modal.classList.contains("hidden")) {
+        closeMyGroups();
+      }
+    });
   </script>
 </body>
-      </html>
+  </html>
