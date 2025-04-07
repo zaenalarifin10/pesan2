@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat Real-time Firebase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+  <!-- Grup Info -->
+  <div class="text-center py-3 border-b bg-white shadow-md sticky top-0 z-10">
+    <h2 id="groupName" class="font-bold text-lg hidden"></h2>
+    <p id="groupToken" class="text-sm text-gray-600 hidden"></p>
+  </div>
+
+  <!-- Chat Container -->
+  <div id="chatContainer" class="pb-24 px-4 pt-4 overflow-y-auto h-[75vh]">
+    <div id="messages" class="space-y-2"></div>
+  </div>
+
+  <!-- Input Pesan -->
+  <div class="fixed bottom-16 w-full px-4">
+    <div class="flex gap-2">
+      <input type="text" id="messageInput" placeholder="Tulis pesan..." class="flex-1 p-2 rounded border border-gray-300" />
+      <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded">➤</button>
+    </div>
+  </div>
+
+  <!-- Navbar Bawah -->
+  <div class="fixed bottom-0 w-full bg-white shadow-md flex justify-around items-center py-3 border-t text-sm">
+    <button onclick="createGroup()" class="text-blue-600 font-semibold">+ Grup</button>
+    <button onclick="joinGroup()" class="text-green-600 font-semibold">Gabung</button>
+    <button onclick="showMyGroups()" class="text-purple-600 font-semibold">Grup Saya</button>
+  </div>
+
+  <!-- Modal Grup Saya -->
+  <div id="myGroupsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-20">
+    <div class="bg-white p-4 rounded shadow-lg max-w-sm w-full">
+      <h3 class="text-lg font-bold mb-2">Grup yang Diikuti</h3>
+      <ul id="groupList" class="space-y-2"></ul>
+      <button onclick="closeMyGroups()" class="mt-4 text-red-500">Tutup</button>
+    </div>
+  </div>
+
+  <script>
+    // Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfpgasxtvd-ZWZ1YugluxQKTE-ZvC6jfM",
+      authDomain: "pesan-ffc61.firebaseapp.com",
+      databaseURL: "https://pesan-ffc61-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "pesan-ffc61",
+      storageBucket: "pesan-ffc61.appspot.com",
+      messagingSenderId: "1026315332815",
+      appId: "1:1026315332815:web:e14eda40c23dc3fe9a1bba"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let username = '';
+    let gender = '';
+    let groupToken = '';
+    let currentGroupName = '';
+    let currentGroupRef;
+
+    function promptUsername() {
+      username = prompt("Masukkan username:");
+      gender = prompt("Kamu cowok atau cewek?");
+      if (!username) promptUsername();
+    }
+
+    function generateToken(length = 5) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let token = '';
+      for (let i = 0; i < length; i++) {
+        token += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return token;
+    }
+
+    function createGroup() {
+      const name = prompt("Nama grup kamu?");
+      if (!name) return;
+      const token = generateToken();
+      db.ref("groups/" + token).set({ name: name });
+      joinGroupByToken(token);
+    }
+
+    function joinGroup() {
+      const token = prompt("Masukkan token grup:");
+      if (!token) return;
+      joinGroupByToken(token.toUpperCase());
+    }
+
+    function joinGroupByToken(token) {
+      groupToken = token;
+      db.ref("groups/" + token + "/name").once("value").then(snapshot => {
+        currentGroupName = snapshot.val() || "Grup Tanpa Nama";
+        document.getElementById("groupName").innerText = currentGroupName;
+        document.getElementById("groupToken").innerText = "Token: " + groupToken;
+        document.getElementById("groupName").classList.remove("hidden");
+        document.getElementById("groupToken").classList.remove("hidden");
+        saveGroupToLocal(currentGroupName, groupToken);
+        listenMessages();
+      });
+    }
+
+    function saveGroupToLocal(name, token) {
+      const saved = JSON.parse(localStorage.getItem("myGroups") || "[]");
+      const exists = saved.find(g => g.token === token);
+      if (!exists) {
+        saved.push({ name, token });
+        localStorage.setItem("myGroups", JSON.stringify(saved));
+      }
+    }
+
+    function showMyGroups() {
+      const modal = document.getElementById("myGroupsModal");
+      const list = document.getElementById("groupList");
+      list.innerHTML = "";
+      const groups = JSON.parse(localStorage.getItem("myGroups") || "[]");
+      groups.forEach(g => {
+        const li = document.createElement("li");
+        li.className = "border p-2 rounded flex justify-between items-center";
+        li.innerHTML = `
+          <div>
+            <strong>${g.name}</strong><br />
+            <small>${g.token}</small>
+          </div>
+          <button onclick="joinGroupByToken('${g.token}')" class="text-blue-500">Masuk</button>
+        `;
+        list.appendChild(li);
+      });
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeMyGroups() {
+      document.getElementById("myGroupsModal").classList.add("hidden");
+    }
+
+    function sendMessage() {
+      const msg = document.getElementById("messageInput").value.trim();
+      if (!msg || !groupToken) return;
+
+      const time = new Date().toISOString();
+      db.ref("groups/" + groupToken + "/chats").push({
+        user: username,
+        gender: gender,
+        message: msg,
+        time: time
+      });
+
+      document.getElementById("messageInput").value = '';
+    }
+
+    function listenMessages() {
+      document.getElementById("messages").innerHTML = '';
+      if (currentGroupRef) currentGroupRef.off();
+      currentGroupRef = db.ref("groups/" + groupToken + "/chats");
+      currentGroupRef.on("child_added", snapshot => {
+        const data = snapshot.val();
+        const div = document.createElement("div");
+        div.className = `p-2 rounded ${
+          data.user === username ? "bg-blue-200 text-right" : "bg-gray-200 text-left"
+        }`;
+        div.innerHTML = `<strong>${data.user} (${data.gender})</strong>: ${data.message}`;
+        document.getElementById("messages").appendChild(div);
+        div.scrollIntoView({ behavior: "smooth" });
+      });
+    }
+
+    promptUsername();
+  </script>
+</body>
+</html>
