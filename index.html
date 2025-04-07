@@ -1,154 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat Mobile Firebase</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-</head>
-<body class="bg-gray-100 text-gray-900">
-
-  <!-- Grup Info -->
-  <div class="text-center py-2 border-b bg-white shadow-md sticky top-0 z-10 text-sm">
-    <h2 id="groupName" class="font-semibold hidden text-base"></h2>
-    <p id="groupToken" class="text-xs text-gray-600 hidden"></p>
-  </div>
-
-  <!-- Chat Container -->
-  <div id="chatContainer" class="pb-28 px-3 pt-3 overflow-y-auto h-[75vh]">
-    <div id="messages" class="space-y-2 text-sm"></div>
-  </div>
-
-  <!-- Input Pesan -->
-  <div class="fixed bottom-0 w-full bg-white border-t p-2 flex items-center gap-2">
-    <button onclick="toggleGroupMenu()" class="bg-gray-200 px-3 py-2 rounded text-sm">☰</button>
-    <input type="text" id="messageInput" placeholder="Tulis pesan..." class="flex-1 p-2 rounded border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-    <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded text-sm">➤</button>
-  </div>
-
-  <!-- Pop-up Menu Grup -->
-  <div id="groupMenu" class="fixed bottom-16 left-2 bg-white border rounded shadow-md text-sm z-30 hidden flex-col">
-    <button onclick="createGroup()" class="p-2 border-b text-blue-600 text-left">+ Grup</button>
-    <button onclick="joinGroup()" class="p-2 border-b text-green-600 text-left">Gabung</button>
-    <button onclick="showMyGroups()" class="p-2 text-purple-600 text-left">Grup Saya</button>
-  </div>
-
-  <!-- Modal Grup Saya -->
-  <div id="myGroupsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-20 px-4">
-    <div class="bg-white p-4 rounded shadow-lg w-full max-w-xs text-sm">
-      <h3 class="text-base font-semibold mb-2">Grup yang Diikuti</h3>
-      <ul id="groupList" class="space-y-2 max-h-60 overflow-y-auto"></ul>
-      <button onclick="closeMyGroups()" class="mt-4 text-red-500">Tutup</button>
-    </div>
-  </div>
-
-  <!-- Modal Username -->
-  <div id="usernameModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-30 px-4">
-    <div class="bg-white p-4 rounded shadow-md w-full max-w-xs text-sm space-y-3">
-      <h2 class="text-base font-semibold text-center">Masukkan Username</h2>
-      <input type="text" id="usernameInput" placeholder="Username kamu" class="w-full p-2 border rounded" />
-      <select id="genderSelect" class="w-full p-2 border rounded">
-        <option value="">Pilih jenis kelamin</option>
-        <option value="cewek">Cewek</option>
-        <option value="cowok">Cowok</option>
-      </select>
-      <button onclick="setUsername()" class="bg-blue-600 w-full py-2 text-white rounded">Lanjut</button>
-    </div>
-  </div>
-
+  <title>Chat Haji</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <script>
-    // Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyBfpgasxtvd-ZWZ1YugluxQKTE-ZvC6jfM",
-      authDomain: "pesan-ffc61.firebaseapp.com",
-      databaseURL: "https://pesan-ffc61-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "pesan-ffc61",
-      storageBucket: "pesan-ffc61.appspot.com",
-      messagingSenderId: "1026315332815",
-      appId: "1:1026315332815:web:e14eda40c23dc3fe9a1bba"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    let username = '';
-    let gender = '';
-    let groupToken = '';
-    let currentGroupName = '';
-    let currentGroupRef;
-
-    // Auto load username
-    window.addEventListener("DOMContentLoaded", () => {
-      const savedUsername = localStorage.getItem("username");
-      const savedGender = localStorage.getItem("gender");
-      if (savedUsername && savedGender) {
-        username = savedUsername;
-        gender = savedGender;
-        document.getElementById("usernameModal").classList.add("hidden");
-      }
-    });
+  apiKey: "AIzaSyExample",
+  authDomain: "chat-haji2025.firebaseapp.com",
+  projectId: "chat-haji2025",
+  storageBucket: "chat-haji2025.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abcdef",
+  databaseURL: "https://chat-haji2025-default-rtdb.firebaseio.com"
+};
+  </script>
+  <script>
+    let username = localStorage.getItem("username") || "";
 
     function setUsername() {
-      const input = document.getElementById("usernameInput").value.trim();
-      const select = document.getElementById("genderSelect").value;
-      if (!input || !select) return alert("Lengkapi data terlebih dahulu.");
-      username = input;
-      gender = select;
-      localStorage.setItem("username", username);
-      localStorage.setItem("gender", gender);
-      document.getElementById("usernameModal").classList.add("hidden");
-    }
-
-    function toggleGroupMenu() {
-      const menu = document.getElementById("groupMenu");
-      menu.classList.toggle("hidden");
-      menu.classList.toggle("flex");
-    }
-
-    function generateToken(length = 5) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let token = '';
-      for (let i = 0; i < length; i++) {
-        token += chars.charAt(Math.floor(Math.random() * chars.length));
+      const input = document.getElementById("usernameInput");
+      const name = input.value.trim();
+      if (name) {
+        localStorage.setItem("username", name);
+        username = name;
+        document.getElementById("usernameModal").classList.add("hidden");
       }
-      return token;
     }
 
-    function createGroup() {
-      const name = prompt("Nama grup kamu?");
-      if (!name) return;
-      const token = generateToken();
-      db.ref("groups/" + token).set({ name: name });
-      joinGroupByToken(token);
-    }
-
-    function joinGroup() {
-      const token = prompt("Masukkan token grup:");
-      if (!token) return;
-      joinGroupByToken(token.toUpperCase());
+    function checkUsername() {
+      if (!username) {
+        document.getElementById("usernameModal").classList.remove("hidden");
+        document.getElementById("usernameInput").focus();
+      }
     }
 
     function joinGroupByToken(token) {
-      groupToken = token;
-      db.ref("groups/" + token + "/name").once("value").then(snapshot => {
-        currentGroupName = snapshot.val() || "Grup Tanpa Nama";
-        document.getElementById("groupName").innerText = currentGroupName;
-        document.getElementById("groupToken").innerText = "Token: " + groupToken;
-        document.getElementById("groupName").classList.remove("hidden");
-        document.getElementById("groupToken").classList.remove("hidden");
-        saveGroupToLocal(currentGroupName, groupToken);
-        listenMessages();
-      });
-    }
-
-    function saveGroupToLocal(name, token) {
-      const saved = JSON.parse(localStorage.getItem("myGroups") || "[]");
-      const exists = saved.find(g => g.token === token);
-      if (!exists) {
-        saved.push({ name, token });
-        localStorage.setItem("myGroups", JSON.stringify(saved));
-      }
+      if (!username) return checkUsername();
+      localStorage.setItem("currentGroup", token);
+      window.location.reload();
     }
 
     function showMyGroups() {
@@ -164,7 +56,10 @@
             <strong>${g.name}</strong><br />
             <small>${g.token}</small>
           </div>
-          <button onclick="joinGroupByToken('${g.token}')" class="text-blue-500">Masuk</button>
+          <div class="flex gap-1">
+            <button onclick="joinGroupByToken('${g.token}')" class="text-blue-500">Masuk</button>
+            <button onclick="deleteGroupFromLocal('${g.token}')" class="text-red-500">Hapus</button>
+          </div>
         `;
         list.appendChild(li);
       });
@@ -172,38 +67,59 @@
       modal.classList.add("flex");
     }
 
-    function closeMyGroups() {
-      document.getElementById("myGroupsModal").classList.add("hidden");
+    function deleteGroupFromLocal(token) {
+      const groups = JSON.parse(localStorage.getItem("myGroups") || "[]");
+      const filtered = groups.filter(g => g.token !== token);
+      localStorage.setItem("myGroups", JSON.stringify(filtered));
+      showMyGroups();
     }
 
-    function sendMessage() {
-      const msg = document.getElementById("messageInput").value.trim();
-      if (!msg || !groupToken) return;
-      const time = new Date().toISOString();
-      db.ref("groups/" + groupToken + "/chats").push({
-        user: username,
-        gender: gender,
-        message: msg,
-        time: time
-      });
-      document.getElementById("messageInput").value = '';
-    }
-
-    function listenMessages() {
-      document.getElementById("messages").innerHTML = '';
-      if (currentGroupRef) currentGroupRef.off();
-      currentGroupRef = db.ref("groups/" + groupToken + "/chats");
-      currentGroupRef.on("child_added", snapshot => {
-        const data = snapshot.val();
-        const div = document.createElement("div");
-        div.className = `p-2 rounded max-w-[80%] ${
-          data.user === username ? "bg-blue-200 ml-auto text-right" : "bg-gray-200 mr-auto text-left"
-        }`;
-        div.innerHTML = `<strong>${data.user} (${data.gender})</strong>:<br>${data.message}`;
-        document.getElementById("messages").appendChild(div);
-        div.scrollIntoView({ behavior: "smooth" });
-      });
-    }
+    window.onload = function () {
+      checkUsername();
+      const currentGroup = localStorage.getItem("currentGroup");
+      if (currentGroup) {
+        document.getElementById("groupTokenDisplay").innerText = "Grup: " + currentGroup;
+        // load chat function goes here
+      }
+    };
   </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+
+  <div class="max-w-md mx-auto bg-white rounded shadow p-4 space-y-4">
+    <h1 class="text-xl font-bold text-center">Chat Haji 2025</h1>
+    <div id="groupTokenDisplay" class="text-center text-sm text-gray-600"></div>
+
+    <div class="flex justify-between">
+      <button onclick="showMyGroups()" class="bg-blue-500 text-white px-4 py-2 rounded">Grup Saya</button>
+    </div>
+
+    <!-- Chat Area (placeholder) -->
+    <div class="h-64 overflow-y-auto border p-2 rounded bg-gray-50">
+      <p class="text-center text-gray-400">Chat akan tampil di sini...</p>
+    </div>
+  </div>
+
+  <!-- Username Modal -->
+  <div id="usernameModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-4 rounded shadow w-80 space-y-2">
+      <h2 class="font-bold text-lg">Masukkan Nama Anda</h2>
+      <input id="usernameInput" type="text" class="border p-2 rounded w-full" placeholder="Nama Anda" />
+      <button onclick="setUsername()" class="bg-green-500 text-white px-4 py-2 rounded w-full">Simpan</button>
+    </div>
+  </div>
+
+  <!-- My Groups Modal -->
+  <div id="myGroupsModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center hidden">
+    <div class="bg-white p-4 rounded shadow w-[90%] max-w-md space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="font-bold text-lg">Grup Saya</h2>
+        <button onclick="document.getElementById('myGroupsModal').classList.add('hidden')" class="text-gray-600">✕</button>
+      </div>
+      <ul id="groupList" class="space-y-2"></ul>
+    </div>
+  </div>
+
 </body>
 </html>
