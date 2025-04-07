@@ -22,21 +22,21 @@
   </div>
 
   <!-- Input Pesan -->
-  <div class="fixed bottom-0 w-full bg-white border-t p-2 flex items-center gap-2">
-    <button onclick="toggleGroupMenu()" class="bg-gray-200 px-3 py-2 rounded text-sm">☰</button>
+  <div class="fixed bottom-0 w-full bg-white border-t p-2 flex items-center gap-2 z-10">
+    <button id="groupMenuToggle" class="bg-gray-200 px-3 py-2 rounded text-sm">☰</button>
     <input type="text" id="messageInput" placeholder="Tulis pesan..." class="flex-1 p-2 rounded border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
     <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded text-sm">➤</button>
   </div>
 
   <!-- Pop-up Menu Grup -->
-  <div id="groupMenu" class="fixed bottom-16 left-2 bg-white border rounded shadow-md text-sm z-30 hidden flex-col">
+  <div id="groupMenu" class="absolute bottom-20 left-2 bg-white border rounded shadow-md text-sm z-30 hidden flex-col">
     <button onclick="createGroup()" class="p-2 border-b text-blue-600 text-left">+ Grup</button>
     <button onclick="joinGroup()" class="p-2 border-b text-green-600 text-left">Gabung</button>
     <button onclick="showMyGroups()" class="p-2 text-purple-600 text-left">Grup Saya</button>
   </div>
 
   <!-- Modal Grup Saya -->
-  <div id="myGroupsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-20 px-4">
+  <div id="myGroupsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-40 px-4">
     <div class="bg-white p-4 rounded shadow-lg w-full max-w-xs text-sm" id="myGroupsContent">
       <h3 class="text-base font-semibold mb-2">Grup yang Diikuti</h3>
       <ul id="groupList" class="space-y-2 max-h-60 overflow-y-auto"></ul>
@@ -45,7 +45,7 @@
   </div>
 
   <!-- Modal Username -->
-  <div id="usernameModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-30 px-4">
+  <div id="usernameModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4">
     <div class="bg-white p-4 rounded shadow-md w-full max-w-xs text-sm space-y-3">
       <h2 class="text-base font-semibold text-center">Masukkan Username</h2>
       <input type="text" id="usernameInput" placeholder="Username kamu" class="w-full p-2 border rounded" />
@@ -76,7 +76,6 @@
     let groupToken = '';
     let currentGroupRef;
 
-    // Cek localStorage untuk username
     window.addEventListener("DOMContentLoaded", () => {
       const savedUsername = localStorage.getItem("username");
       const savedGender = localStorage.getItem("gender");
@@ -98,11 +97,12 @@
       document.getElementById("usernameModal").classList.add("hidden");
     }
 
-    function toggleGroupMenu() {
+    document.getElementById("groupMenuToggle").addEventListener("click", function(e) {
+      e.stopPropagation();
       const menu = document.getElementById("groupMenu");
       menu.classList.toggle("hidden");
       menu.classList.toggle("flex");
-    }
+    });
 
     function generateToken(length = 5) {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -188,6 +188,8 @@
 
     function closeMyGroups() {
       document.getElementById("myGroupsModal").classList.add("hidden");
+      document.getElementById("groupMenu").classList.add("hidden");
+      document.getElementById("groupMenu").classList.remove("flex");
     }
 
     function sendMessage() {
@@ -219,13 +221,14 @@
       });
     }
 
-    // Close pop-up saat klik luar
+    // Klik luar pop-up untuk tutup menu
     document.addEventListener("click", function (e) {
       const menu = document.getElementById("groupMenu");
+      const toggleBtn = document.getElementById("groupMenuToggle");
       const modal = document.getElementById("myGroupsModal");
       const modalContent = document.getElementById("myGroupsContent");
 
-      if (!menu.contains(e.target) && !e.target.matches("button[onclick*='toggleGroupMenu']")) {
+      if (!menu.contains(e.target) && e.target !== toggleBtn) {
         menu.classList.add("hidden");
         menu.classList.remove("flex");
       }
@@ -236,4 +239,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
